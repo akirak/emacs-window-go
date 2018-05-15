@@ -66,9 +66,9 @@
 (defun window-go-swap (w1 w2)
   "Swap two windows W1 and W2."
   (unless (and (windowp w1) (windowp w2))
-    (error "not a window"))
+    (error "Not a window"))
   (when (equal w1 w2)
-    (error "same window"))
+    (error "Same window"))
   (let ((b1 (window-buffer w1))
         (b2 (window-buffer w2)))
     (with-temp-buffer
@@ -88,9 +88,9 @@
 (defun window-go-split-sensibly (&optional arg)
   "Split the window sensibly.
 
-With a universal prefix argument (C-u), switch to the selected window.
+With a universal prefix argument ARG, switch to the selected window.
 
-With two universal prefix arguments (C-u C-u), switch to the selected window
+With two universal prefix arguments, switch to the selected window
 and display another buffer."
   (interactive "P")
   (let ((direction (if (> (window-body-width) 160)
