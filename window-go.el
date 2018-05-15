@@ -32,6 +32,69 @@
 ;;; Code:
 
 (require 'dash)
+(require 'cl-lib)
+
+(defcustom window-go-filtered-buffers
+  '(helm-major-mode)
+  "List of conditions on buffers that won't be displayed.
+
+Each item in this list should be either a symbol or a string. If an item is
+a symbol, then it is tested equality against the major mode of the buffer.
+If it is a string, then it is considered as a regular expression and matched
+against the name of the buffer.
+
+Buffers that match one of these conditions are not displayed by functions such
+as `window-go-other-buffer' and `window-go-split-sensibly' with two prefix
+arguments."
+  :group 'window-go
+  :type '(repeat (choice symbol string)))
+
+(defcustom window-go-non-filtered-read-only-buffers
+  '(help-mode
+    info-mode
+    dired-mode)
+  "List of conditions on read-only buffers that can be displayed.
+
+By default, read-only buffers are skipped by functions such as
+`window-go-other-buffer'. However, buffers that match these conditions are not
+skipped.
+
+Items in this list follow the same rule as in `window-go-filtered-buffers'."
+  :group 'window-go
+  :type '(repeat (choice symbol string)))
+
+(defun window-go--buffer-match-condition-p (buf condition)
+  "Test if BUF satisfies CONDITION."
+  (cl-etypecase condition
+    (symbol (eq condition (with-current-buffer buf major-mode)))
+    (string (string-match-p condition (buffer-name buf)))))
+
+(defun window-go--ignore-buffer-p (buf)
+  "Test if BUF satisfies one of the conditions in `window-go-filtered-buffers'."
+  (or (minibufferp buf)
+      ;; Ignore read-only buffers
+      (and (with-current-buffer buf buffer-read-only)
+           (not (-any (lambda (condition)
+                        (window-go--buffer-match-condition-p buf condition))
+                      window-go-non-filtered-read-only-buffers)))
+      (-any (lambda (condition)
+              (get-buffer-window buf))
+            window-go-filtered-buffers)))
+
+(defun window-go--other-buffer ()
+  "Find another buffer."
+  (cl-loop for buf in (buffer-list (selected-frame))
+           unless (or (window-go--ignore-buffer-p buf)
+                      ;; Ignore buffers displayed in a window
+                      (get-buffer-window buf))
+           return buf))
+
+(defun window-go-switch-to-other-buffer ()
+  "Switch to another buffer sensibly."
+  (interactive)
+  (let ((buf (window-go--other-buffer)))
+    (when buf
+      (switch-to-buffer buf))))
 
 (defun window-go-bottom ()
   "Select the bottom window in the current frame."
@@ -102,7 +165,7 @@ and display another buffer."
     (when arg
       (other-window 1)
       (when (equal arg '(16))
-        (switch-to-buffer (other-buffer))))))
+        (window-go-switch-to-other-buffer)))))
 
 (defun window-go-term-in-split-window ()
   "Split the window sensibly and open a dedicated multi-term."
