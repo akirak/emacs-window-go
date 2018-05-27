@@ -91,6 +91,17 @@ If prefix ARG is non-nil, delete the window instead of selecting it."
       (window-go-swap master target)
       (window-go-master))))
 
+(defun window-go--split-sensibly ()
+  "Split the window sensibly and don't do anything else.
+
+This is a private function to be used by other functions in this library."
+  (let ((direction (if (> (window-body-width) 160)
+                       'right
+                     'below)))
+    (pcase direction
+      ('right (split-window-right))
+      ('below (split-window-below)))))
+
 (defun window-go-split-sensibly (&optional arg)
   "Split the window sensibly.
 
@@ -99,16 +110,27 @@ With a universal prefix argument ARG, switch to the selected window.
 With two universal prefix arguments, switch to the selected window
 and display another buffer."
   (interactive "P")
-  (let ((direction (if (> (window-body-width) 160)
-                       'right
-                     'below)))
-    (pcase direction
-      ('right (split-window-right))
-      ('below (split-window-below)))
-    (when arg
-      (other-window 1)
-      (when (equal arg '(16))
-        (switch-to-buffer (other-buffer))))))
+  (window-go--split-sensibly)
+  (when arg
+    (other-window 1)
+    (when (equal arg '(16))
+      (switch-to-buffer (other-buffer)))))
+
+(defun window-go-other-buffer-in-split-window (&optional arg)
+  "Display other buffer in a sensibly split window.
+
+Without prefix ARG, split the window sensibly using the same internal function
+with `window-go-split-sensibly', display another buffer in a new window, and
+select the window.
+
+With prefix ARG, don't select the window displaying the buffer. The buffer is
+displayed in the new window, but the focus remains in the original window."
+  (interactive "P")
+  (window-go--split-sensibly)
+  (other-window 1)
+  (switch-to-buffer (other-buffer))
+  (when arg
+    (other-window -1)))
 
 (defun window-go-term-in-split-window ()
   "Split the window sensibly and open a dedicated multi-term."
