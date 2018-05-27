@@ -34,15 +34,20 @@
 (require 'dash)
 (require 'cl-lib)
 
-(defun window-go-bottom ()
-  "Select the bottom window in the current frame."
-  (interactive)
-  (select-window (-last
-                  (lambda (obj)
-                    (and (window-valid-p obj)
-                         (window-live-p obj)
-                         (not (window-minibuffer-p obj))))
-                  (-flatten (window-tree)))))
+(defun window-go-bottom (&optional arg)
+  "Select the bottom window in the current frame.
+
+If prefix ARG is non-nil, delete the window instead of selecting it."
+  (interactive "P")
+  (let ((target (-last
+                 (lambda (obj)
+                   (and (window-valid-p obj)
+                        (window-live-p obj)
+                        (not (window-minibuffer-p obj))))
+                 (-flatten (window-tree)))))
+    (if arg
+        (delete-window target)
+      (select-window target))))
 
 (defun window-go-first-file-window ()
   "Select the first window in the current frame displaying a file buffer."
