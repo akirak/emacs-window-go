@@ -4,7 +4,7 @@
 
 ;; Author: Akira Komamura <akira.komamura@gmail.com>
 ;; Version: 0.1.0
-;; Package-Requires: ((emacs "25.1") exwm)
+;; Package-Requires: ((emacs "25.1") (exwm "0.18") (window-go "0.1.0"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -30,6 +30,9 @@
 ;;; Code:
 
 (require 'exwm)
+(require 'window-go)
+(require 'cl-lib)
+(require 'seq)
 
 (defcustom exwm-window-go-h-resize-ratio 0.08
   "Ratio for horizontally resizing."
@@ -70,6 +73,57 @@
     (if (= (nth 1 (window-edges)) 0)
         (exwm-layout-shrink-window pixels)
       (exwm-layout-enlarge-window pixels))))
+
+(defun exwm-window-go--visible-workspaces ()
+  "Return a list of visible workspaces, sorted by position."
+  (cl-sort (cl-loop for frame in exwm-workspace--list
+                    when (exwm-workspace--active-p frame)
+                    collect frame)
+           'window-go--compare-frame-positions))
+
+(defun exwm-window-go-next-visible-workspace (&optional arg)
+  "Switch to the next visible workspace."
+  (interactive "P")
+  (let* ((items (exwm-window-go--visible-workspaces))
+         (pos (seq-position items (selected-frame)))
+         (new-pos (+ pos (if (numberp arg) arg 1))))
+    (when pos
+      (select-frame (seq-elt items (cond
+                                    ((< new-pos 0) (+ new-pos (length items)))
+                                    ((< new-pos (length items)) new-pos)
+                                    (t (- new-pos (length items)))))))))
+
+(defun exwm-window-go-previous-visible-workspace (&optional arg)
+  "Switch to the previous visible workspace."
+  (interactive "P")
+  (exwm-window-go-next-visible-workspace (if (numberp arg)
+                                             (- arg)
+                                           -1)))
+
+(defun exwm-window-go--hidden-workspaces ()
+  "Return a list of hidden workspaces."
+  ;; TODO: Think about how to order the workspace list
+  (let* ((all-workspaces exwm-workspace--list)
+         (pos (seq-position all-workspaces (selected-frame))))
+    (cl-remove-if #'exwm-workspace--active-p
+                  (append (seq-subseq all-workspaces (1+ pos))
+                          (seq-subseq all-workspaces 0 pos)))))
+
+(defun exwm-window-go-next-hidden-workspace (&optional arg)
+  "Switch to the next hidden workspace in the workspace list."
+  (interactive "P")
+  (let* ((ws (exwm-window-go--hidden-workspaces))
+         (pos (if (numberp arg) (1- arg) 0))
+         (frm (elt ws (cond
+                       ((< pos 0) (+ pos (length ws)))
+                       ((< pos (length ws)) pos)
+                       (t (- pos (length ws)))))))
+    (when frm (select-frame frm))))
+
+(defun exwm-window-go-previous-hidden-workspace (&optional arg)
+  "Switch to the previous hidden workspace in the workspace list."
+  (interactive "P")
+  (exwm-window-go-next-hidden-workspace (if (numberp arg) (- arg) 0)))
 
 (provide 'exwm-window-go)
 ;;; exwm-window-go.el ends here

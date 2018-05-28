@@ -32,6 +32,7 @@
 ;;; Code:
 
 (require 'dash)
+(require 'cl-lib)
 
 (defun window-go-bottom ()
   "Select the bottom window in the current frame."
@@ -110,6 +111,17 @@ and display another buffer."
   (window-go-split-sensibly)
   (multi-term)
   (set-window-dedicated-p (selected-window) t))
+
+(defun window-go--compare-frame-positions (frm1 frm2)
+  "Compare positions between two frames FRM1 and FRM2."
+  (cl-destructuring-bind
+      ((x1 . y1) (x2 . y2))
+      (list (frame-position frm1) (frame-position frm2))
+    (cond
+     ((< x1 x2) t)
+     ((> x1 x2) nil)
+     ((< y1 y2) t)
+     (t nil))))
 
 (provide 'window-go)
 ;;; window-go.el ends here
