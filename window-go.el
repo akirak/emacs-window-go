@@ -95,7 +95,7 @@ If prefix ARG is non-nil, delete the window instead of selecting it."
   "Split the window sensibly and don't do anything else.
 
 This is a private function to be used by other functions in this library."
-  (let ((direction (if (> (window-body-width) 160)
+  (let ((direction (if (> (window-total-width) 160)
                        'right
                      'below)))
     (pcase direction
