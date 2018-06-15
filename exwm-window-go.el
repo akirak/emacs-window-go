@@ -42,6 +42,11 @@
   "Ratio for vertical resizing."
   :group 'window-go)
 
+(defcustom exwm-window-go-cycle-visible-workspaces t
+  "Cycle through visible workspaces."
+  :type 'boolean
+  :group 'window-go)
+
 (defun exwm-window-go-shrink-horizontally ()
   "Shrink the pane horizontally."
   (interactive)
@@ -84,14 +89,17 @@
 (defun exwm-window-go-next-visible-workspace (&optional arg)
   "Switch to the next visible workspace."
   (interactive "P")
-  (let* ((items (exwm-window-go--visible-workspaces))
-         (pos (seq-position items (selected-frame)))
-         (new-pos (+ pos (if (numberp arg) arg 1))))
-    (when pos
-      (select-frame (seq-elt items (cond
-                                    ((< new-pos 0) (+ new-pos (length items)))
-                                    ((< new-pos (length items)) new-pos)
-                                    (t (- new-pos (length items)))))))))
+  (when-let
+      ((items (exwm-window-go--visible-workspaces))
+       (pos (seq-position items (selected-frame)))
+       (new-pos (+ pos (if (numberp arg) arg 1)))
+       (j (cond
+           ((< new-pos 0) (when exwm-window-go-cycle-visible-workspaces
+                            (+ new-pos (length items))))
+           ((< new-pos (length items)) new-pos)
+           (t (when exwm-window-go-cycle-visible-workspaces
+                (- new-pos (length items)))))))
+    (select-frame (seq-elt items j))))
 
 (defun exwm-window-go-previous-visible-workspace (&optional arg)
   "Switch to the previous visible workspace."
