@@ -36,10 +36,12 @@
 
 (defcustom exwm-window-go-h-resize-ratio 0.08
   "Ratio for horizontally resizing."
+  :type 'float
   :group 'window-go)
 
 (defcustom exwm-window-go-resize-ratio 0.08
   "Ratio for vertical resizing."
+  :type 'float
   :group 'window-go)
 
 (defcustom exwm-window-go-cycle-visible-workspaces t
